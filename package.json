@@ -1,0 +1,36 @@
+{
+  "name": "certiflow",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:frontend": "npm run dev --workspace=@certiflow/frontend",
+    "dev:backend": "npm run dev --workspace=@certiflow/backend",
+    "dev:worker": "npm run dev:worker --workspace=@certiflow/backend",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "db:migrate": "npm run db:migrate --workspace=@certiflow/backend",
+    "db:seed": "npm run db:seed --workspace=@certiflow/backend",
+    "db:generate": "npm run db:generate --workspace=@certiflow/backend",
+    "db:push": "npm run db:push --workspace=@certiflow/backend",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:build": "docker-compose build"
+  },
+  "devDependencies": {
+    "@prisma/debug": "^7.10.1",
+    "@prisma/engines": "^5.22.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: certiflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-certiflow}
+      POSTGRES_USER: ${POSTGRES_USER:-certiflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-certiflow_secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-certiflow} -d ${POSTGRES_DB:-certiflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - certiflow-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: certiflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - certiflow-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: certiflow-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-certiflow}:${POSTGRES_PASSWORD:-certiflow_secret}@postgres:5432/${POSTGRES_DB:-certiflow}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-certiflow_access_jwt_secret_dev_32char}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-certiflow_refresh_jwt_secret_dev_32char}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      BCRYPT_ROUNDS: 12
+      RATE_LIMIT_MAX: 100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - certiflow-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: certiflow-worker
+    restart: unless-stopped
+    command: ["node", "apps/backend/dist/src/workers/index.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-certiflow}:${POSTGRES_PASSWORD:-certiflow_secret}@postgres:5432/${POSTGRES_DB:-certiflow}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-certiflow_access_jwt_secret_dev_32char}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-certiflow_refresh_jwt_secret_dev_32char}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - certiflow-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: certiflow-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - certiflow-network
+
+networks:
+  certiflow-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

@@ -1,0 +1,266 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  TRAINING_CENTRE
+  DISTRICT_OFFICER
+  QUALITY_OFFICER
+  STATE_OFFICER
+  ADMIN
+}
+
+enum BatchStatus {
+  DRAFT
+  VALIDATING
+  NEEDS_REVISION
+  SUBMITTED
+  DISTRICT_PARTIALLY_APPROVED
+  DISTRICT_APPROVED
+  QUALITY_REVIEW
+  STATE_APPROVED
+  REJECTED
+  CERTIFICATES_ISSUED
+}
+
+enum CandidateStatus {
+  VALID
+  INVALID
+  PROCESSED
+}
+
+enum CertificateStatus {
+  ISSUED
+  REVOKED
+  SUSPENDED
+}
+
+enum ApprovalTier {
+  DISTRICT
+  QUALITY
+  STATE
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model District {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  state     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users   User[]
+  batches Batch[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  districtId   String?
+  district     District? @relation(fields: [districtId], references: [id])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  batches       Batch[]        @relation("TrainingCentreBatches")
+  approvals     Approval[]
+
+  @@index([role, districtId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRevoked])
+}
+
+model Batch {
+  id                    String      @id @default(uuid())
+  batchNumber           String      @unique
+  trainingCentreId      String
+  trainingCentre        User        @relation("TrainingCentreBatches", fields: [trainingCentreId], references: [id])
+  districtId            String
+  district              District    @relation(fields: [districtId], references: [id])
+  courseName            String
+  startDate             String
+  endDate               String
+  version               Int         @default(1)
+  status                BatchStatus @default(DRAFT)
+  candidateCount        Int         @default(0)
+  qualityFlag           Boolean     @default(false)
+  qualityReviewRequired Boolean     @default(false)
+  stageDeadline         DateTime?
+  isOverdue             Boolean     @default(false)
+  submittedAt           DateTime?
+  stateApprovedAt       DateTime?
+  stateApproverId       String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  candidates   Candidate[]
+  approvals    Approval[]
+  certificates Certificate[]
+
+  @@index([status, districtId, updatedAt])
+}
+
+model Candidate {
+  id               String          @id @default(uuid())
+  batchId          String
+  batch            Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchVersion     Int             @default(1)
+  fullName         String
+  fatherName       String
+  dob              String
+  gender           String
+  aadhaarHash      String
+  phone            String
+  email            String
+  enrollmentNumber String
+  status           CandidateStatus @default(VALID)
+  validationErrors Json?
+  createdAt        DateTime        @default(now())
+
+  certificate Certificate?
+
+  @@unique([batchId, enrollmentNumber])
+  @@unique([batchId, aadhaarHash])
+  @@index([batchId, status])
+}
+
+model Certificate {
+  id                String            @id @default(uuid())
+  certificateNumber String            @unique
+  candidateId       String            @unique
+  candidate         Candidate         @relation(fields: [candidateId], references: [id])
+  batchId           String
+  batch             Batch             @relation(fields: [batchId], references: [id])
+  opaqueToken       String            @unique
+  qrCodeDataUrl     String?           @db.Text
+  pdfStorageKey     String?
+  pdfUrl            String?
+  issuedAt          DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  status            CertificateStatus @default(ISSUED)
+
+  notifications    Notification[]
+  verificationLogs VerificationLog[]
+
+  @@unique([candidateId, batchId])
+  @@index([opaqueToken])
+  @@index([status])
+}
+
+model Approval {
+  id           String           @id @default(uuid())
+  batchId      String
+  batch        Batch            @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchVersion Int
+  tier         ApprovalTier
+  approverId   String
+  approver     User             @relation(fields: [approverId], references: [id])
+  decision     ApprovalDecision
+  remarks      String?          @db.Text
+  createdAt    DateTime         @default(now())
+
+  @@unique([batchId, batchVersion, approverId, tier])
+  @@index([batchId, batchVersion])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String
+  actorRole    String
+  targetEntity String
+  targetId     String
+  actionType   String
+  ipAddress    String?
+  userAgent    String?
+  diffPayload  Json?
+  createdAt    DateTime @default(now())
+
+  @@index([targetEntity, targetId])
+  @@index([actorId, createdAt])
+}
+
+model OutboxEvent {
+  id          String       @id @default(uuid())
+  topic       String
+  payload     Json
+  status      OutboxStatus @default(PENDING)
+  retryCount  Int          @default(0)
+  lastError   String?      @db.Text
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id                String              @id @default(uuid())
+  recipientPhone    String
+  certificateId     String
+  certificate       Certificate         @relation(fields: [certificateId], references: [id])
+  channel           NotificationChannel @default(WHATSAPP)
+  templateName      String
+  payloadJson       Json
+  providerMessageId String?
+  status            NotificationStatus  @default(PENDING)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  errorMessage      String?             @db.Text
+  createdAt         DateTime            @default(now())
+
+  @@index([status, sentAt])
+}
+
+model VerificationLog {
+  id            String       @id @default(uuid())
+  certificateId String?
+  certificate   Certificate? @relation(fields: [certificateId], references: [id])
+  ipHash        String
+  userAgent     String?
+  method        String
+  verifiedAt    DateTime     @default(now())
+
+  @@index([certificateId])
+  @@index([ipHash, verifiedAt])
+}
