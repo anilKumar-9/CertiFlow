@@ -4,11 +4,20 @@
 
 ---
 
+## 🎥 End-to-End Product Demonstration Video
+
+> **Watch the Complete Workflow Video Walkthrough**:  
+> 🔗 **[Click Here to Watch the Demo Video on Google Drive](https://drive.google.com/file/d/1mSor0ahKK0oHLF_SNssED50voqYcOUhJ/view?usp=sharing)**  
+> *Covers Excel roster upload, 48-hour SLA four-eyes district approval, 10% quality sampling audit, executive state clearance, Project Veer / NCVET certificate preview, and public QR verification.*
+
+---
+
 ## Table of Contents
 
+0. [🎥 End-to-End Product Demonstration Video](#-end-to-end-product-demonstration-video)
 1. [Architecture & System Overview](#1-architecture--system-overview)
 2. [Prerequisites & Environment Setup](#2-prerequisites--environment-setup)
-3. [Master Credentials Directory (All Roles)](#3-master-credentials-directory-all-roles)
+3. [Master Credentials Directory (All Roles & Passwords)](#3-master-credentials-directory-all-roles--passwords)
 4. [Step-by-Step Manual End-to-End Testing Walkthrough](#4-step-by-step-manual-end-to-end-testing-walkthrough)
    - [Step 1: Training Centre — Create Batch & Upload Excel Roster](#step-1-training-centre--create-batch--upload-excel-roster)
    - [Step 2: District Tier — Four-Eyes Dual-Officer Approval](#step-2-district-tier--four-eyes-dual-officer-approval)
@@ -157,23 +166,37 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 3. Master Credentials Directory (All Roles)
+## 3. Master Credentials Directory (All Roles & Passwords)
 
-All pre-seeded demonstration accounts share the master password below:
+All pre-seeded demonstration accounts are configured with the universal master password below:
 
-> **Master Demo Password**: `DemoPassword123!`
+> 🔑 **Master Demo Password**: `DemoPassword123!`
 
-| Role Level | Official Title | Login Email | Assigned Jurisdiction / Scope | Primary Governance Authority |
-| :--- | :--- | :--- | :--- | :--- |
-| **Training Centre** | Apex Skilling Delhi | `centre.delhi@skills.org` | Central Delhi (`DL-01`) | Create batch, upload Excel roster, submit to SLA queue |
-| **District Officer 1** | Pooja Verma (DO-01) | `district.delhi1@certiflow.gov.in` | Central Delhi (`DL-01`) | Dual-sign approval (1/2), inspection notes, return for revision |
-| **District Officer 2** | Amit Patel (DO-02) | `district.delhi2@certiflow.gov.in` | Central Delhi (`DL-01`) | Dual-sign approval (2/2), completes four-eyes district clearance |
-| **Quality Officer** | Sunita Rao (QA) | `quality.officer@certiflow.gov.in` | Statewide Quality Directorate | 10% PRNG audit sampling, high-volume anomaly checks |
-| **State Director** | Dr. Ramesh Kumar (DG) | `state.officer@certiflow.gov.in` | State Government Skill Mission | Final clearance, asynchronous PDFKit issuance, certificate revocation |
-| **Platform Admin** | Platform Administrator | `admin@certiflow.gov.in` | System-Wide | Audit log inspection, security settings, user provisioning |
-| **Public Citizen** | Open Citizen / Employer | *No Login Required* | National Public Gateway | QR code scanning & certificate authenticity verification |
+### User Authentication Directory
 
-> **Tip**: On the **Gov Sign-In** page (`/login`), click the quick-fill chips under **"Quick Demo Role Auto-Fill"** to automatically populate both the email and password for any role in one click.
+| Role Level | Official Title | User ID (Login Email) | Password | Assigned Scope | Key Responsibilities & Capabilities |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Training Centre** | Apex Skilling Delhi (TC-084) | `centre.delhi@skills.org` | `DemoPassword123!` | Central Delhi (`DL-01`) | Register courses, upload Excel rosters, view candidate dossiers, submit to 48h SLA queue |
+| **District Officer 1** | A. K. Verma (DO-01) | `district.delhi1@certiflow.gov.in` | `DemoPassword123!` | Central Delhi (`DL-01`) | Inspect candidate marks/attendance/biometrics, record initial sign-off (1/2), request revision |
+| **District Officer 2** | R. Sharma (DO-02) | `district.delhi2@certiflow.gov.in` | `DemoPassword123!` | Central Delhi (`DL-01`) | Complete Four-Eyes dual-sign off (2/2), advance batches to Quality Sampling |
+| **Quality Officer** | S. Sen (QA Directorate) | `quality.officer@certiflow.gov.in` | `DemoPassword123!` | Statewide Quality Directorate | 10% PRNG statistical audit sampling, high-volume anomaly checks (>100), NCVET audit sign-off |
+| **State Director** | Dr. V. K. Nair (DG) | `state.officer@certiflow.gov.in` | `DemoPassword123!` | State Skill Mission (DSSDM) | Executive clearance, PDFKit issuance dispatch, Project Veer layout preview, emergency revocation |
+| **Platform Admin** | Platform Administrator | `admin@certiflow.gov.in` | `DemoPassword123!` | System-Wide | System audit ledger, DPDP compliance settings, user and district provisioning |
+| **Public Citizen** | Employer / Citizen | *Zero Auth (No Login Required)* | *N/A* | Public Gateway | Instant QR code scanning, certificate authenticity verification, single-page slip printing |
+
+> 💡 **One-Click Auto-Fill**: On the **Gov Sign-In** page (`/login`), click any role chip under **"Quick Demo Role Auto-Fill"** to immediately populate both the User ID and Password.
+
+---
+
+### Verification Test Credentials (Public Registry Lookup)
+
+Use these pre-indexed certificate numbers on the **Public Verification Portal** (`http://localhost:5173/` or clicking **"Public Verification"** in the top bar):
+
+| Verification Test Scenario | Target Certificate Number | Expected Result & Verification Outcome |
+| :--- | :--- | :--- |
+| **Genuine Verified Credential** | `CF-2026-DL-000001` | **`✓ OFFICIALLY AUTHENTICATED & VALID`** emerald badge. Candidate name masked per DPDP Act (`R**** V****`), NCVET accredited course, verifiable QR code, "View Authentic Certificate" modal, single-page slip print, and PDF download. |
+| **Revoked Credential (State Order)** | `CF-2026-DL-000099` | **`⚠ OFFICIAL WARNING: REVOKED`** crimson alert. Details official cause for revocation (`Fraudulent Assessment Scores`) and inquiry committee reference. Zero legal validity. |
+| **Unregistered / Non-Existent ID** | `CF-2026-XX-999999` | **`UNVERIFIED IDENTIFIER`** amber warning. Certificate number not found in national skilling ledger; troubleshooting checklist provided. |
 
 ---
 
